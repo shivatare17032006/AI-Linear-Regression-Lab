@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Linear Regression Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { box-sizing: border-box; }
+    
+    @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); } 50% { box-shadow: 0 0 30px rgba(147, 51, 234, 0.7); } }
+    @keyframes pulse-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    
+    .glow-border { animation: glow 2s ease-in-out infinite; }
+    .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+    .float-animation { animation: float 3s ease-in-out infinite; }
+    .rotate-animation { animation: rotate 2s linear infinite; }
+    
+    .gradient-text {
+      background: linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .neon-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      backdrop-filter: blur(10px);
+    }
+    
+    .neon-button {
+      background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+      transition: all 0.3s ease;
+    }
+    
+    .neon-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 hidden"></div>
+
+  <!-- Parameter Selection Modal -->
+  <div id="param-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="neon-card p-8 rounded-lg max-w-md w-full mx-4">
+      <h3 class="text-2xl font-bold text-blue-400 mb-6 text-center">Select Parameters</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-gray-300 mb-2">X Parameter (Independent Variable)</label>
+          <select id="x-param-select" class="w-full bg-slate-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-blue-400 focus:outline-none">
+            <option value="">Select X parameter</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-2">Y Parameter (Target Variable)</label>
+          <select id="y-param-select" class="w-full bg-slate-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-purple-400 focus:outline-none">
+            <option value="">Select Y parameter</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex space-x-4 mt-6">
+        <button id="confirm-params" class="flex-1 neon-button py-3 rounded-lg text-white font-semibold">Confirm Parameters</button>
+        <button id="cancel-params" class="flex-1 bg-gray-600 hover:bg-gray-700 py-3 rounded-lg text-white font-semibold transition-colors">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="bg-slate-800 border-b border-blue-500/30 p-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <h1 id="app-title" class="text-2xl font-bold gradient-text">AI Linear Regression Lab</h1>
+      <div class="flex space-x-6">
+        <button class="nav-tab px-4 py-2 rounded-lg transition-all duration-300 bg-blue-600 text-white glow-border" data-tab="home">Home</button>
+        <button class="nav-tab px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white hover:bg-slate-700" data-tab="upload">Upload</button>
+        <button class="nav-tab px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white hover:bg-slate-700" data-tab="visualize">Visualize</button>
+        <button class="nav-tab px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white hover:bg-slate-700" data-tab="about">About</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="min-h-screen">
+    <!-- Home Page -->
+    <div id="home-page" class="page-content">
+      <div class="max-w-4xl mx-auto p-8 text-center">
+        <div class="float-animation mb-8">
+          <div class="w-32 h-32 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="text-5xl font-bold gradient-text mb-6 pulse-glow">Universal Linear Regression Lab</h2>
+        <p id="intro-text" class="text-xl text-gray-300 mb-8 leading-relaxed">
+          Upload ANY dataset, choose ANY columns for X and Y, and build linear regression models instantly. 
+          Perfect for students, researchers, and data enthusiasts.
+        </p>
+        <div class="grid md:grid-cols-3 gap-6 mt-12">
+          <div class="neon-card p-6 rounded-lg">
+            <div class="text-blue-400 text-3xl mb-4">📊</div>
+            <h3 class="text-xl font-semibold mb-2">Any Dataset</h3>
+            <p class="text-gray-400">Upload CSV files with any structure - housing prices, sales data, student marks, etc.</p>
+          </div>
+          <div class="neon-card p-6 rounded-lg">
+            <div class="text-purple-400 text-3xl mb-4">🎯</div>
+            <h3 class="text-xl font-semibold mb-2">Flexible Parameters</h3>
+            <p class="text-gray-400">Choose any columns as X (independent) and Y (target) variables</p>
+          </div>
+          <div class="neon-card p-6 rounded-lg">
+            <div class="text-cyan-400 text-3xl mb-4">📈</div>
+            <h3 class="text-xl font-semibold mb-2">Instant Results</h3>
+            <p class="text-gray-400">Get regression equations, predictions, and beautiful visualizations</p>
+          </div>
+        </div>
+        
+        <div class="mt-12 neon-card p-8 rounded-lg">
+          <h3 class="text-2xl font-bold text-purple-400 mb-4">Quick Start Guide</h3>
+          <div class="grid md:grid-cols-4 gap-4 text-left">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">1</div>
+              <p class="text-sm">Upload CSV File</p>
+            </div>
+            <div class="text-center">
+              <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-2">2</div>
+              <p class="text-sm">Select X & Y Columns</p>
+            </div>
+            <div class="text-center">
+              <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-2">3</div>
+              <p class="text-sm">Train Model</p>
+            </div>
+            <div class="text-center">
+              <div class="w-12 h-12 bg-cyan-600 rounded-full flex items-center justify-center mx-auto mb-2">4</div>
+              <p class="text-sm">Visualize & Predict</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Page -->
+    <div id="upload-page" class="page-content hidden">
+      <div class="max-w-6xl mx-auto p-8">
+        <h2 class="text-3xl font-bold gradient-text mb-8 text-center">Upload Your Dataset</h2>
+        
+        <div class="grid lg:grid-cols-2 gap-8 mb-8">
+          <div class="neon-card p-6 rounded-lg">
+            <h3 class="text-xl font-semibold mb-4 text-blue-400">📁 Supported Formats</h3>
+            <ul class="text-gray-300 space-y-2">
+              <li>• CSV files (Comma Separated Values)</li>
+              <li>• Any number of columns</li>
+              <li>• Any column names</li>
+              <li>• Numeric data for regression</li>
+            </ul>
+          </div>
+          <div class="neon-card p-6 rounded-lg">
+            <h3 class="text-xl font-semibold mb-4 text-green-400">💡 Dataset Examples</h3>
+            <ul class="text-gray-300 space-y-2">
+              <li>• Housing prices vs square footage</li>
+              <li>• Student marks vs study hours</li>
+              <li>• Sales vs advertising budget</li>
+              <li>• Temperature vs ice cream sales</li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="upload-area" class="neon-card p-12 rounded-lg border-2 border-dashed border-gray-600 transition-all duration-300 hover:border-blue-400 cursor-pointer mb-8">
+          <div class="text-center">
+            <div class="text-6xl mb-4">📁</div>
+            <h3 class="text-xl font-semibold mb-4">Drag and drop your dataset</h3>
+            <p class="text-gray-400 mb-6">or click to browse files (CSV format)</p>
+            <button id="choose-file-btn" class="neon-button px-6 py-3 rounded-lg text-white font-semibold">Choose CSV File</button>
+            <input id="file-input" type="file" class="hidden" accept=".csv">
+          </div>
+        </div>
+
+        <div id="data-preview" class="hidden">
+          <div class="neon-card p-6 rounded-lg">
+            <h3 class="text-xl font-semibold mb-4 text-green-400 flex items-center">
+              <span class="text-2xl mr-2">✅</span> Dataset Ready for Analysis!
+            </h3>
+            <div class="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 class="text-lg font-semibold mb-3 text-blue-400">Data Preview</h4>
+                <div class="overflow-x-auto max-h-80 bg-slate-800 rounded-lg">
+                  <table id="preview-table" class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-gray-600">
+                        <!-- Headers will be populated by JavaScript -->
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+                <p id="data-info" class="text-gray-400 text-xs mt-2"></p>
+              </div>
+              <div>
+                <h4 class="text-lg font-semibold mb-3 text-purple-400">Next Steps</h4>
+                <div class="space-y-3">
+                  <div class="bg-slate-800 p-4 rounded-lg">
+                    <div class="text-cyan-400 font-semibold mb-2">1. Select Parameters</div>
+                    <p class="text-gray-300 text-sm">Choose which columns to use for X (independent) and Y (target) variables</p>
+                  </div>
+                  <div class="bg-slate-800 p-4 rounded-lg">
+                    <div class="text-green-400 font-semibold mb-2">2. Train Model</div>
+                    <p class="text-gray-300 text-sm">Build the linear regression model with your selected parameters</p>
+                  </div>
+                  <div class="bg-slate-800 p-4 rounded-lg">
+                    <div class="text-purple-400 font-semibold mb-2">3. Analyze Results</div>
+                    <p class="text-gray-300 text-sm">View predictions, metrics, and visualizations</p>
+                  </div>
+                </div>
+                <button onclick="switchTab('visualize')" class="w-full mt-4 neon-button py-3 rounded-lg font-semibold text-lg">
+                  🚀 Continue to Visualization
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visualize Page -->
+    <div id="visualize-page" class="page-content hidden">
+      <div class="max-w-7xl mx-auto p-8">
+        <h2 class="text-3xl font-bold gradient-text mb-8 text-center">Model Training & Visualization</h2>
+        
+        <!-- Dataset Info Card -->
+        <div id="dataset-info" class="neon-card p-6 rounded-lg mb-6 hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xl font-semibold text-blue-400">Current Dataset</h3>
+              <p id="dataset-details" class="text-gray-300"></p>
+            </div>
+            <button onclick="switchTab('upload')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+              Change Dataset
+            </button>
+          </div>
+        </div>
+
+        <!-- Training Controls Section -->
+        <div class="neon-card p-8 rounded-lg mb-8">
+          <div class="grid lg:grid-cols-3 gap-8 items-start">
+            <div>
+              <h3 class="text-xl font-semibold mb-4 text-blue-400">Step 1: Set Parameters</h3>
+              <div class="space-y-4">
+                <div id="current-params" class="bg-slate-800 p-4 rounded-lg hidden">
+                  <div class="text-green-400 text-sm font-semibold">CURRENT PARAMETERS</div>
+                  <div id="params-display" class="text-white mt-1"></div>
+                </div>
+                <button id="select-params-btn" class="w-full neon-button py-4 rounded-lg font-semibold text-lg">
+                  🎯 Select X & Y Parameters
+                </button>
+                <p class="text-gray-400 text-sm">Choose which columns to use for independent (X) and target (Y) variables</p>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-4 text-purple-400">Step 2: Train Model</h3>
+              <button id="train-btn" class="w-full py-4 rounded-lg font-semibold transition-all duration-300 bg-gray-600 cursor-not-allowed text-lg" disabled>
+                ⏳ Set Parameters First
+              </button>
+              <p class="text-gray-400 text-sm mt-2">Train the linear regression model with your selected parameters</p>
+            </div>
+            
+            <div id="prediction-section" class="hidden">
+              <h3 class="text-xl font-semibold mb-4 text-cyan-400">Step 3: Make Predictions</h3>
+              <div class="space-y-3">
+                <input id="prediction-input" type="number" placeholder="Enter X value for prediction" 
+                       class="w-full bg-slate-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg focus:border-cyan-400 focus:outline-none">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input id="x-unit-input" type="text" placeholder="X unit (e.g., km, hours, sqft)"
+                         list="unit-suggestions-x"
+                         class="w-full bg-slate-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-cyan-400 focus:outline-none">
+                  <input id="y-unit-input" type="text" placeholder="Y unit (e.g., lakhs, $, ₹)"
+                         list="unit-suggestions-y"
+                         class="w-full bg-slate-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-cyan-400 focus:outline-none">
+                </div>
+                <button id="predict-btn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 py-3 rounded-lg font-semibold transition-all duration-300 text-lg">
+                  Calculate Prediction
+                </button>
+                <div id="prediction-result" class="hidden bg-slate-800 p-4 rounded-lg border-l-4 border-green-400">
+                  <div class="text-green-400 text-sm font-semibold">PREDICTED VALUE</div>
+                  <div id="prediction-value" class="text-2xl font-mono text-white mt-1"></div>
+                  <div id="prediction-equation" class="text-gray-400 text-sm mt-2"></div>
+                </div>
+                <div id="prediction-history" class="hidden bg-slate-800 p-4 rounded-lg border border-slate-700">
+                  <div class="text-blue-400 text-sm font-semibold mb-2">RECENT PREDICTIONS</div>
+                  <ul id="prediction-history-list" class="text-sm text-gray-300 space-y-1"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Results -->
+        <div id="model-results" class="neon-card p-6 rounded-lg mb-8 hidden">
+          <h3 class="text-2xl font-semibold text-green-400 mb-4 flex items-center">
+            <span class="text-2xl mr-2">✅</span> Model Results
+          </h3>
+          <div class="grid md:grid-cols-2 gap-8">
+            <div>
+              <div class="bg-slate-800 p-4 rounded-lg mb-4">
+                <div class="text-blue-400 text-sm font-semibold">REGRESSION EQUATION</div>
+                <div id="equation" class="text-xl font-mono text-white mt-2 p-3 bg-slate-900 rounded border-l-4 border-blue-400"></div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-800 p-4 rounded-lg text-center">
+                  <div class="text-purple-400 text-sm font-semibold">MEAN SQUARED ERROR</div>
+                  <div id="mse-value" class="text-2xl font-bold text-white mt-1">-</div>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-lg text-center">
+                  <div class="text-green-400 text-sm font-semibold">R-SQUARED</div>
+                  <div id="r2-value" class="text-2xl font-bold text-white mt-1">-</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="bg-slate-800 p-4 rounded-lg">
+                <div class="text-cyan-400 text-sm font-semibold mb-3">COEFFICIENTS</div>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-300">Slope:</span>
+                    <span id="slope-value" class="text-white font-mono">-</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-300">Intercept:</span>
+                    <span id="intercept-value" class="text-white font-mono">-</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-300">Data Points:</span>
+                    <span id="data-count" class="text-white font-mono">-</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visualization Section -->
+        <div class="neon-card p-8 rounded-lg">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-semibold text-purple-400 flex items-center">
+              <span class="text-2xl mr-3">📊</span> Regression Visualization
+            </h3>
+            <div id="chart-legend" class="hidden flex items-center space-x-6">
+              <div class="flex items-center">
+                <div class="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                <span class="text-gray-300 text-sm">Data Points</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-4 h-1 bg-purple-500 mr-2"></div>
+                <span class="text-gray-300 text-sm">Regression Line</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-slate-800/30 p-6 rounded-lg border border-gray-700">
+            <canvas id="regression-chart" class="w-full" style="height: 500px;"></canvas>
+            <div id="no-data-message" class="flex flex-col items-center justify-center text-gray-400 py-20">
+              <div class="text-6xl mb-4">📈</div>
+              <h4 class="text-xl font-semibold mb-2">Ready for Analysis</h4>
+              <p class="text-center mb-4">Upload a dataset and set parameters to see the regression visualization</p>
+              <div class="flex space-x-4">
+                <button onclick="switchTab('upload')" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition-colors">
+                  Upload Dataset
+                </button>
+                <button id="select-params-from-viz" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold transition-colors">
+                  Select Parameters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About Page -->
+    <div id="about-page" class="page-content hidden">
+      <div class="max-w-4xl mx-auto p-8">
+        <h2 class="text-3xl font-bold gradient-text mb-8 text-center">About Universal Linear Regression Lab</h2>
+        <div class="neon-card p-8 rounded-lg">
+          <div class="prose prose-invert max-w-none">
+            <p class="text-lg text-gray-300 mb-6">
+              The <strong>Universal Linear Regression Lab</strong> is designed to work with <strong>ANY dataset</strong>. 
+              Simply upload your CSV file, select any columns for X and Y variables, and instantly build, visualize, 
+              and use linear regression models.
+            </p>
+            
+            <h3 class="text-xl font-semibold text-blue-400 mb-4">🌟 Key Features</h3>
+            <ul class="text-gray-300 space-y-2 mb-6">
+              <li>• <strong>Any CSV Dataset</strong> - Works with housing data, sales figures, student marks, scientific measurements, etc.</li>
+              <li>• <strong>Flexible Parameter Selection</strong> - Choose any columns as independent (X) and target (Y) variables</li>
+              <li>• <strong>Real-time Training</strong> - Instant linear regression model building</li>
+              <li>• <strong>Interactive Visualizations</strong> - Beautiful scatter plots with regression lines</li>
+              <li>• <strong>Accurate Predictions</strong> - Make predictions based on your trained model</li>
+              <li>• <strong>Comprehensive Metrics</strong> - MSE, R-squared, coefficients, and more</li>
+            </ul>
+
+            <h3 class="text-xl font-semibold text-purple-400 mb-4">🔄 How It Works</h3>
+            <div class="grid md:grid-cols-4 gap-4 mb-6">
+              <div class="text-center p-4 bg-slate-800 rounded-lg">
+                <div class="text-2xl mb-2">1</div>
+                <div class="text-blue-400 font-semibold">Upload CSV</div>
+                <p class="text-gray-400 text-sm mt-1">Any structure, any columns</p>
+              </div>
+              <div class="text-center p-4 bg-slate-800 rounded-lg">
+                <div class="text-2xl mb-2">2</div>
+                <div class="text-purple-400 font-semibold">Select Columns</div>
+                <p class="text-gray-400 text-sm mt-1">Choose X and Y variables</p>
+              </div>
+              <div class="text-center p-4 bg-slate-800 rounded-lg">
+                <div class="text-2xl mb-2">3</div>
+                <div class="text-green-400 font-semibold">Train Model</div>
+                <p class="text-gray-400 text-sm mt-1">Build regression model</p>
+              </div>
+              <div class="text-center p-4 bg-slate-800 rounded-lg">
+                <div class="text-2xl mb-2">4</div>
+                <div class="text-cyan-400 font-semibold">Analyze & Predict</div>
+                <p class="text-gray-400 text-sm mt-1">Visualize and make predictions</p>
+              </div>
+            </div>
+
+            <h3 class="text-xl font-semibold text-green-400 mb-4">💼 Use Cases</h3>
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+              <div class="bg-slate-800 p-4 rounded-lg">
+                <div class="text-yellow-400 font-semibold">Education</div>
+                <p class="text-gray-300 text-sm">Student marks vs study hours, attendance impact analysis</p>
+              </div>
+              <div class="bg-slate-800 p-4 rounded-lg">
+                <div class="text-red-400 font-semibold">Business</div>
+                <p class="text-gray-300 text-sm">Sales vs advertising spend, price optimization</p>
+              </div>
+              <div class="bg-slate-800 p-4 rounded-lg">
+                <div class="text-blue-400 font-semibold">Real Estate</div>
+                <p class="text-gray-300 text-sm">House prices vs square footage, location analysis</p>
+              </div>
+              <div class="bg-slate-800 p-4 rounded-lg">
+                <div class="text-purple-400 font-semibold">Research</div>
+                <p class="text-gray-300 text-sm">Scientific measurements, experimental data analysis</p>
+              </div>
+            </div>
+
+            <div class="text-center mt-8">
+              <a href="https://github.com/username/universal-regression-lab" target="_blank" rel="noopener noreferrer" 
+                 class="inline-flex items-center neon-button px-6 py-3 rounded-lg text-white font-semibold">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"/>
+                </svg>
+                View on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Unit suggestions -->
+  <datalist id="unit-suggestions-x">
+    <option value="km"></option>
+    <option value="m"></option>
+    <option value="cm"></option>
+    <option value="hours"></option>
+    <option value="days"></option>
+    <option value="sqft"></option>
+    <option value="kg"></option>
+    <option value="units"></option>
+  </datalist>
+  <datalist id="unit-suggestions-y">
+    <option value="lakhs"></option>
+    <option value="$"></option>
+    <option value="₹"></option>
+    <option value="rupees"></option>
+    <option value="score"></option>
+    <option value="price"></option>
+    <option value="sales"></option>
+  </datalist>
+
+  <script>
+    // Application state
+    let appState = {
+      activeTab: 'home',
+      uploadedData: null,
+      modelResults: null,
+      currentDataset: null,
+      backendUrl: 'http://localhost:3002',
+      currentColumns: [],
+      currentParams: null,
+      currentUnits: { x: null, y: null },
+      predictionHistory: []
+    };
+
+    // Toast notification function
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 text-white ${
+        type === 'success' ? 'bg-green-600' : 'bg-red-600'
+      }`;
+      toast.classList.remove('hidden');
+      
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4000);
+    }
+
+    // Navigation functionality
+    function switchTab(tabName) {
+      appState.activeTab = tabName;
+      
+      // Update navigation buttons
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.className = 'nav-tab px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white hover:bg-slate-700';
+      });
+      document.querySelector(`[data-tab="${tabName}"]`).className = 'nav-tab px-4 py-2 rounded-lg transition-all duration-300 bg-blue-600 text-white glow-border';
+      
+      // Show/hide pages
+      document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.add('hidden');
+      });
+      document.getElementById(`${tabName}-page`).classList.remove('hidden');
+    }
+
+    // Show parameter selection modal
+    function showParameterSelection() {
+      const modal = document.getElementById('param-modal');
+      const xSelect = document.getElementById('x-param-select');
+      const ySelect = document.getElementById('y-param-select');
+      
+      // Clear existing options
+      xSelect.innerHTML = '<option value="">Select X (Independent Variable)</option>';
+      ySelect.innerHTML = '<option value="">Select Y (Target Variable)</option>';
+      
+      // Get columns from backend
+      fetch(`${appState.backendUrl}/columns`)
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to fetch columns');
+          return response.json();
+        })
+        .then(columns => {
+          appState.currentColumns = columns;
+          
+          columns.forEach(col => {
+            const xOption = document.createElement('option');
+            xOption.value = col.index;
+            xOption.textContent = `${col.name} (Column ${col.index})`;
+            xSelect.appendChild(xOption);
+            
+            const yOption = document.createElement('option');
+            yOption.value = col.index;
+            yOption.textContent = `${col.name} (Column ${col.index})`;
+            ySelect.appendChild(yOption);
+          });
+          
+          // Set previous values if they exist
+          if (appState.currentParams) {
+            xSelect.value = appState.currentParams.x;
+            ySelect.value = appState.currentParams.y;
+          }
+          
+          modal.classList.remove('hidden');
+        })
+        .catch(error => {
+          console.error('Error fetching columns:', error);
+          showToast('Failed to load dataset columns. Make sure you have uploaded a dataset.', 'error');
+        });
+    }
+
+    // File upload functionality - ACCEPTS ANY CSV
+    async function handleFileUpload(file) {
+      try {
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+          showToast('Please upload a CSV file', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          try {
+            const csvText = e.target.result;
+            
+            // Show loading state
+            const uploadArea = document.getElementById('upload-area');
+            uploadArea.innerHTML = `
+              <div class="text-center">
+                <div class="rotate-animation w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 class="text-xl font-semibold mb-2">Processing Dataset...</h3>
+                <p class="text-gray-400">Uploading and analyzing your data</p>
+              </div>
+            `;
+            
+            // Send CSV data to backend
+            const response = await fetch(`${appState.backendUrl}/upload`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ csv_data: csvText })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to upload dataset');
+            }
+
+            const result = await response.json();
+            
+            // Update dataset info
+            updateDatasetInfo(result);
+            
+            // Parse CSV for frontend preview
+            updateDataPreview(csvText, result);
+            
+            showToast(`Dataset uploaded successfully! ${result.rows} rows, ${result.columns} columns loaded.`);
+            
+            // Reset parameters
+            appState.currentParams = null;
+            resetModelState();
+            
+          } catch (error) {
+            showToast(error.message, 'error');
+            resetUploadArea();
+          }
+        };
+        reader.readAsText(file);
+      } catch (error) {
+        showToast(error.message, 'error');
+        resetUploadArea();
+      }
+    }
+
+    // Update dataset information
+    function updateDatasetInfo(result) {
+      const datasetInfo = document.getElementById('dataset-info');
+      const datasetDetails = document.getElementById('dataset-details');
+      
+      datasetDetails.textContent = `${result.rows} rows, ${result.columns} columns: ${result.column_names.join(', ')}`;
+      datasetInfo.classList.remove('hidden');
+    }
+
+    // Update data preview table
+    function updateDataPreview(csvText, result) {
+      const rows = csvText.split('\n');
+      const headers = rows[0].split(',');
+      const dataRows = rows.slice(1, 6).filter(row => row.trim()); // First 5 data rows for preview
+      
+      // Update preview table
+      const thead = document.querySelector('#preview-table thead tr');
+      const tbody = document.querySelector('#preview-table tbody');
+      
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+      
+      // Add headers
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        th.className = 'text-left p-3 text-blue-400 font-semibold bg-slate-700';
+        th.textContent = header.trim();
+        thead.appendChild(th);
+      });
+      
+      // Add data rows
+      dataRows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-gray-700 hover:bg-slate-700';
+        
+        const cells = row.split(',');
+        cells.forEach(cell => {
+          const td = document.createElement('td');
+          td.className = 'p-3';
+          td.textContent = cell.trim();
+          tr.appendChild(td);
+        });
+        
+        tbody.appendChild(tr);
+      });
+      
+      // Update data info
+      document.getElementById('data-info').textContent = 
+        `Showing first 5 rows of ${result.rows} total rows`;
+      
+      // Show preview section
+      document.getElementById('data-preview').classList.remove('hidden');
+    }
+
+    // Reset upload area to initial state
+    function resetUploadArea() {
+      const uploadArea = document.getElementById('upload-area');
+      uploadArea.innerHTML = `
+        <div class="text-center">
+          <div class="text-6xl mb-4">📁</div>
+          <h3 class="text-xl font-semibold mb-4">Drag and drop your dataset</h3>
+          <p class="text-gray-400 mb-6">or click to browse files (CSV format)</p>
+          <button id="choose-file-btn" class="neon-button px-6 py-3 rounded-lg text-white font-semibold">Choose CSV File</button>
+          <input id="file-input" type="file" class="hidden" accept=".csv">
+        </div>
+      `;
+      
+      // Reattach event listeners
+      document.getElementById('choose-file-btn').addEventListener('click', () => {
+        document.getElementById('file-input').click();
+      });
+    }
+
+    // Reset model state when new dataset is uploaded
+    function resetModelState() {
+      appState.modelResults = null;
+      appState.currentParams = null;
+      
+      // Reset UI elements
+      document.getElementById('current-params').classList.add('hidden');
+      document.getElementById('train-btn').disabled = true;
+      document.getElementById('train-btn').className = 'w-full py-4 rounded-lg font-semibold transition-all duration-300 bg-gray-600 cursor-not-allowed text-lg';
+      document.getElementById('train-btn').innerHTML = '⏳ Set Parameters First';
+      document.getElementById('model-results').classList.add('hidden');
+      document.getElementById('prediction-section').classList.add('hidden');
+      document.getElementById('chart-legend').classList.add('hidden');
+      document.getElementById('no-data-message').style.display = 'flex';
+      
+      // Clear chart
+      if (window.regressionChart) {
+        window.regressionChart.destroy();
+      }
+    }
+
+    // Create scatter plot using Chart.js
+    function createScatterPlot(canvasId, data, regressionLine = null) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.regressionChart) {
+        window.regressionChart.destroy();
+      }
+      
+      const xAxisTitle = appState.currentParams 
+        ? `X: ${appState.currentParams.xName}${appState.currentUnits.x ? ' (' + appState.currentUnits.x + ')' : ''}`
+        : 'X Axis';
+      const yAxisTitle = appState.currentParams 
+        ? `Y: ${appState.currentParams.yName}${appState.currentUnits.y ? ' (' + appState.currentUnits.y + ')' : ''}`
+        : 'Y Axis';
+
+      const datasets = [{
+        label: 'Data Points',
+        data: data,
+        backgroundColor: '#3b82f6',
+        borderColor: '#3b82f6',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        type: 'scatter'
+      }];
+      
+      if (regressionLine && regressionLine.length > 0) {
+        datasets.push({
+          label: 'Regression Line',
+          data: regressionLine,
+          borderColor: '#8b5cf6',
+          backgroundColor: 'transparent',
+          pointRadius: 0,
+          type: 'line',
+          borderWidth: 3,
+          tension: 0
+        });
+      }
+      
+      window.regressionChart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { 
+                color: '#9CA3AF',
+                font: { size: 14 }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleColor: '#9CA3AF',
+              bodyColor: '#E5E7EB',
+              borderColor: '#374151',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              grid: { color: '#374151' },
+              ticks: { color: '#9CA3AF' },
+              title: {
+                display: true,
+                text: xAxisTitle,
+                color: '#9CA3AF'
+              }
+            },
+            y: {
+              grid: { color: '#374151' },
+              ticks: { color: '#9CA3AF' },
+              title: {
+                display: true,
+                text: yAxisTitle,
+                color: '#9CA3AF'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Model training with backend
+    async function trainModel() {
+      if (!appState.currentParams) {
+        showToast('Please select parameters first!', 'error');
+        return;
+      }
+      
+      const trainBtn = document.getElementById('train-btn');
+      trainBtn.innerHTML = `
+        <div class="flex items-center justify-center">
+          <div class="rotate-animation w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+          🤖 Training Model...
+        </div>
+      `;
+      trainBtn.disabled = true;
+      
+      try {
+        const response = await fetch(`${appState.backendUrl}/train`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to train model');
+        }
+
+        const result = await response.json();
+        appState.modelResults = result;
+
+        // Update UI with results
+        updateModelResults(result);
+        
+        // Create visualization
+        createRegressionVisualization(result);
+        
+        showToast('Model trained successfully!');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        // Reset button
+        trainBtn.innerHTML = '🚀 Train Model';
+        trainBtn.disabled = false;
+        trainBtn.className = 'w-full py-4 rounded-lg font-semibold transition-all duration-300 neon-button text-lg';
+      }
+    }
+
+    // Update model results in UI
+    function updateModelResults(result) {
+      document.getElementById('equation').textContent = result.equation;
+      document.getElementById('mse-value').textContent = result.mse.toFixed(6);
+      document.getElementById('r2-value').textContent = result.r_squared.toFixed(6);
+      document.getElementById('slope-value').textContent = result.slope.toFixed(6);
+      document.getElementById('intercept-value').textContent = result.intercept.toFixed(6);
+      document.getElementById('data-count').textContent = result.data_count;
+      
+      document.getElementById('model-results').classList.remove('hidden');
+      document.getElementById('prediction-section').classList.remove('hidden');
+    }
+
+    // Create regression visualization
+    function createRegressionVisualization(result) {
+      document.getElementById('no-data-message').style.display = 'none';
+      document.getElementById('chart-legend').classList.remove('hidden');
+      
+      createScatterPlot('regression-chart', result.data_points, result.regression_line);
+    }
+
+    // Prediction functionality
+    async function makePrediction() {
+      const input = document.getElementById('prediction-input').value;
+      if (!appState.modelResults || !input) {
+        showToast('Please enter a value for prediction', 'error');
+        return;
+      }
+      
+      const x = parseFloat(input);
+      if (isNaN(x)) {
+        showToast('Please enter a valid number', 'error');
+        return;
+      }
+      // Read units (optional)
+      const xUnitRaw = document.getElementById('x-unit-input').value;
+      const yUnitRaw = document.getElementById('y-unit-input').value;
+      const cleanUnit = (u) => {
+        if (u == null) return null;
+        const t = String(u).trim();
+        if (!t) return null;
+        return t.substring(0, 20);
+      };
+      const x_unit = cleanUnit(xUnitRaw);
+      const y_unit = cleanUnit(yUnitRaw);
+      
+      try {
+        const response = await fetch(`${appState.backendUrl}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ x, x_unit, y_unit })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to get prediction');
+        }
+
+        const result = await response.json();
+        // Set current units from response if present, else from inputs
+        const ux = result.x_unit || x_unit || null;
+        const uy = result.y_unit || y_unit || null;
+        appState.currentUnits = { x: ux, y: uy };
+
+        // Update result display: X value with unit → Y prediction with unit
+        const inputStr = `${x}${ux ? ' ' + ux : ''}`;
+        const predStr = `${result.prediction.toFixed(4)}${uy ? ' ' + uy : ''}`;
+        document.getElementById('prediction-value').textContent = `X: ${inputStr} → Y: ${predStr}`;
+        document.getElementById('prediction-equation').textContent = `Using: ${result.equation}${ux || uy ? ` | Units: ${ux ? 'X=' + ux : ''}${ux && uy ? ', ' : ''}${uy ? 'Y=' + uy : ''}` : ''}`;
+        document.getElementById('prediction-result').classList.remove('hidden');
+        
+        showToast(`Prediction: ${result.prediction.toFixed(4)}`);
+
+        // Update chart axis titles if chart exists
+        if (window.regressionChart) {
+          const xTitle = appState.currentParams ? `X: ${appState.currentParams.xName}${ux ? ' (' + ux + ')' : ''}` : 'X Axis';
+          const yTitle = appState.currentParams ? `Y: ${appState.currentParams.yName}${uy ? ' (' + uy + ')' : ''}` : 'Y Axis';
+          window.regressionChart.options.scales.x.title.text = xTitle;
+          window.regressionChart.options.scales.y.title.text = yTitle;
+          window.regressionChart.update();
+        }
+
+        // Maintain lightweight prediction history (last 5)
+        appState.predictionHistory.unshift({ x, x_unit: ux, y: result.prediction, y_unit: uy, ts: Date.now() });
+        appState.predictionHistory = appState.predictionHistory.slice(0, 5);
+        renderPredictionHistory();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    function renderPredictionHistory() {
+      const container = document.getElementById('prediction-history');
+      const list = document.getElementById('prediction-history-list');
+      if (!appState.predictionHistory.length) {
+        container.classList.add('hidden');
+        return;
+      }
+      list.innerHTML = '';
+      appState.predictionHistory.forEach(item => {
+        const li = document.createElement('li');
+        const xStr = `${item.x}${item.x_unit ? ' ' + item.x_unit : ''}`;
+        const yStr = `${Number(item.y).toFixed(4)}${item.y_unit ? ' ' + item.y_unit : ''}`;
+        const date = new Date(item.ts);
+        li.textContent = `${date.toLocaleTimeString()} — X: ${xStr} → Y: ${yStr}`;
+        list.appendChild(li);
+      });
+      container.classList.remove('hidden');
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Navigation
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          switchTab(e.target.dataset.tab);
+        });
+      });
+      
+      // File upload
+      const uploadArea = document.getElementById('upload-area');
+      const fileInput = document.getElementById('file-input');
+      const chooseFileBtn = document.getElementById('choose-file-btn');
+      
+      chooseFileBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) handleFileUpload(e.target.files[0]);
+      });
+      
+      // Drag and drop
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('border-blue-400', 'bg-blue-900/20');
+        uploadArea.classList.remove('border-gray-600');
+      });
+      
+      uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('border-blue-400', 'bg-blue-900/20');
+        uploadArea.classList.add('border-gray-600');
+      });
+      
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('border-blue-400', 'bg-blue-900/20');
+        uploadArea.classList.add('border-gray-600');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) handleFileUpload(files[0]);
+      });
+      
+      // Parameter selection
+      document.getElementById('select-params-btn').addEventListener('click', showParameterSelection);
+      document.getElementById('select-params-from-viz').addEventListener('click', showParameterSelection);
+      
+      document.getElementById('confirm-params').addEventListener('click', () => {
+        const xParam = document.getElementById('x-param-select').value;
+        const yParam = document.getElementById('y-param-select').value;
+        
+        if (!xParam || !yParam) {
+          showToast('Please select both X and Y parameters', 'error');
+          return;
+        }
+        
+        if (xParam === yParam) {
+          showToast('X and Y parameters must be different', 'error');
+          return;
+        }
+        
+        // Send parameters to backend
+        fetch(`${appState.backendUrl}/set_parameters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            x_param: xParam,
+            y_param: yParam
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          // Store current parameters
+          appState.currentParams = {
+            x: xParam,
+            y: yParam,
+            xName: result.x_param_name,
+            yName: result.y_param_name
+          };
+          
+          // Update UI
+          document.getElementById('params-display').innerHTML = `
+            <div class="flex space-x-4">
+              <div>
+                <span class="text-blue-400">X:</span> ${result.x_param_name}
+              </div>
+              <div>
+                <span class="text-purple-400">Y:</span> ${result.y_param_name}
+              </div>
+            </div>
+          `;
+          document.getElementById('current-params').classList.remove('hidden');
+          
+          // Enable train button
+          document.getElementById('train-btn').disabled = false;
+          document.getElementById('train-btn').className = 'w-full py-4 rounded-lg font-semibold transition-all duration-300 neon-button text-lg';
+          document.getElementById('train-btn').innerHTML = '🚀 Train Model';
+          
+          document.getElementById('param-modal').classList.add('hidden');
+          showToast(`Parameters set: ${result.x_param_name} → ${result.y_param_name}`);
+        })
+        .catch(error => {
+          showToast('Failed to set parameters', 'error');
+          console.error('Error setting parameters:', error);
+        });
+      });
+      
+      document.getElementById('cancel-params').addEventListener('click', () => {
+        document.getElementById('param-modal').classList.add('hidden');
+      });
+      
+      // Close modal on background click
+      document.getElementById('param-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'param-modal') {
+          document.getElementById('param-modal').classList.add('hidden');
+        }
+      });
+      
+      // Training and prediction
+      document.getElementById('train-btn').addEventListener('click', trainModel);
+      document.getElementById('predict-btn').addEventListener('click', makePrediction);
+      
+      // Enter key for prediction input
+      document.getElementById('prediction-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          makePrediction();
+        }
+      });
+      // Enter key on unit inputs triggers prediction as well
+      document.getElementById('x-unit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') makePrediction(); });
+      document.getElementById('y-unit-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') makePrediction(); });
+      
+      // Check backend connection on startup
+      checkBackendConnection();
+    });
+
+    // Check backend connection
+    function checkBackendConnection() {
+      fetch(`${appState.backendUrl}/status`)
+        .then(response => {
+          if (response.ok) {
+            console.log('Backend server is connected');
+          } else {
+            showToast('Backend server is not responding', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Backend connection failed:', error);
+          showToast('Cannot connect to backend server. Make sure it\'s running on localhost:3002', 'error');
+        });
+    }
+  </script>
+</body>
+</html>
